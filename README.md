@@ -55,7 +55,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-The tests use a small in-repository runner, so a clean build does not need GoogleTest or network access.
+Tests use GoogleTest, fetched by CMake during configuration when `BUILD_TESTING` is enabled. The first configure therefore needs network access; subsequent builds use the fetched dependency in the build directory.
 
 ## Example
 

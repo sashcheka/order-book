@@ -14,10 +14,20 @@ target_link_libraries(order_book_app PRIVATE orderbook)
 
 include(CTest)
 if(BUILD_TESTING)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.18.0
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(googletest)
+
   add_executable(order_book_tests tests/order_book_tests.cpp)
-  target_link_libraries(order_book_tests PRIVATE orderbook)
+  target_link_libraries(order_book_tests PRIVATE orderbook GTest::gtest_main)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(order_book_tests PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wshadow)
   endif()
-  add_test(NAME order_book_tests COMMAND order_book_tests)
+  include(GoogleTest)
+  gtest_discover_tests(order_book_tests)
 endif()
