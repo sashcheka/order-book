@@ -10,6 +10,9 @@ CTestTestfile.cmake
 *.ninja
 .ninja_*
 
+# OS
+.DS_Store
+
 # Editor
 .vscode/
 .idea/
