@@ -50,7 +50,8 @@ class OrderBook {
   std::uint64_t next_sequence_{1};
   TradeId next_trade_id_{1};
 
-  void validate_new_order(OrderId id, Side side, Quantity quantity);
+  void validate_new_order(OrderId id, Side side, Quantity quantity) const;
+  void validate_level_capacity(Side side, Price price, Quantity quantity) const;
   [[nodiscard]] std::vector<Trade> match(Order& incoming);
   void rest(Order&& order);
   void erase_order(Location& location);

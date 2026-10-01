@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <utility>
 
 namespace orderbook {
@@ -13,15 +14,31 @@ bool is_valid_side(Side side) {
 
 }  // namespace
 
-void OrderBook::validate_new_order(OrderId id, Side side, Quantity quantity) {
+void OrderBook::validate_new_order(OrderId id, Side side, Quantity quantity) const {
   if (!is_valid_side(side)) {
     throw std::invalid_argument("invalid order side");
   }
   if (quantity == 0) {
     throw std::invalid_argument("order quantity must be positive");
   }
-  if (!used_ids_.insert(id).second) {
+  if (used_ids_.contains(id)) {
     throw std::invalid_argument("order ID has already been used");
+  }
+}
+
+void OrderBook::validate_level_capacity(Side side, Price price,
+                                        Quantity quantity) const {
+  Quantity current_quantity{};
+  if (side == Side::buy) {
+    const auto level = bids_.find(price);
+    if (level != bids_.end()) current_quantity = level->second.total_quantity;
+  } else {
+    const auto level = asks_.find(price);
+    if (level != asks_.end()) current_quantity = level->second.total_quantity;
+  }
+
+  if (quantity > std::numeric_limits<Quantity>::max() - current_quantity) {
+    throw std::overflow_error("aggregate price-level quantity would overflow");
   }
 }
 
@@ -31,6 +48,8 @@ std::vector<Trade> OrderBook::add_limit_order(OrderId id, Side side, Price price
     throw std::invalid_argument("limit price must be positive");
   }
   validate_new_order(id, side, quantity);
+  validate_level_capacity(side, price, quantity);
+  used_ids_.insert(id);
   Order incoming{id, side, OrderType::limit, price, quantity, quantity,
                  next_sequence_++};
   auto trades = match(incoming);
@@ -43,6 +62,7 @@ std::vector<Trade> OrderBook::add_limit_order(OrderId id, Side side, Price price
 std::vector<Trade> OrderBook::add_market_order(OrderId id, Side side,
                                               Quantity quantity) {
   validate_new_order(id, side, quantity);
+  used_ids_.insert(id);
   Order incoming{id, side, OrderType::market, 0, quantity, quantity,
                  next_sequence_++};
   return match(incoming);

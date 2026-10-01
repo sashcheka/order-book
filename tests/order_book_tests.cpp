@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -167,6 +168,29 @@ void snapshots_respect_depth_and_aggregate() {
   CHECK(snapshot.bids[0].order_count == 2);
 }
 
+void aggregate_quantity_overflow_is_rejected_without_mutation() {
+  const auto verify_side = [](Side side) {
+    OrderBook book;
+    const auto max_quantity = std::numeric_limits<Quantity>::max();
+    (void)book.add_limit_order(1, side, 100, max_quantity);
+    expect_throw<std::overflow_error>(
+        [&] { (void)book.add_limit_order(2, side, 100, 1); }, __func__);
+
+    const auto snapshot = book.snapshot();
+    const auto& levels = side == Side::buy ? snapshot.bids : snapshot.asks;
+    CHECK(levels.size() == 1);
+    CHECK(levels[0].quantity == max_quantity);
+    CHECK(book.order_count() == 1);
+
+    CHECK(book.cancel_order(1));
+    (void)book.add_limit_order(2, side, 100, 1);
+    CHECK(book.order_count() == 1);
+    CHECK(book.snapshot().bids.size() + book.snapshot().asks.size() == 1);
+  };
+  verify_side(Side::buy);
+  verify_side(Side::sell);
+}
+
 }  // namespace
 
 int main() {
@@ -180,6 +204,7 @@ int main() {
       {"market_orders_and_price_rule", market_orders_and_price_rule},
       {"invalid_orders_and_id_reuse", invalid_orders_and_id_reuse},
       {"snapshots_respect_depth_and_aggregate", snapshots_respect_depth_and_aggregate},
+      {"aggregate_quantity_overflow_is_rejected_without_mutation", aggregate_quantity_overflow_is_rejected_without_mutation},
   };
   for (const auto& [name, test] : tests) {
     const int failures_before = failures;

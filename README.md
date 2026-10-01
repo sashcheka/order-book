@@ -70,7 +70,7 @@ TRADE 4 @ 100
 ASK 6 @ 100
 ```
 
-The C++ API is in `include/orderbook/order_book.hpp`. Invalid prices, zero quantities, invalid sides, and reused IDs throw `std::invalid_argument`. IDs remain reserved after an order is canceled or filled, so the uniqueness set grows with the number of submitted orders during the book's lifetime.
+The C++ API is in `include/orderbook/order_book.hpp`. Invalid prices, zero quantities, invalid sides, and reused IDs throw `std::invalid_argument`. An order that would overflow an aggregated price-level quantity is rejected with `std::overflow_error`. IDs remain reserved after an order is canceled or filled, so the uniqueness set grows with the number of submitted orders during the book's lifetime.
 
 ## Future work
 
